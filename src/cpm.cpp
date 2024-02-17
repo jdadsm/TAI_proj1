@@ -31,10 +31,8 @@ public:
         char c;
         int count = 0;
         while (count < chunkSize && file.get(c)) {
-            if (c == 'A' || c == 'C' || c == 'G' || c == 'T') {
-                buffer.push_back(c);
-                count++;
-            }
+            buffer.push_back(c);
+            count++;
         }
 
         file.seekg(position + 1);
@@ -51,7 +49,7 @@ public:
 
 int main() {
 
-    const std::string filename = "../../example/example.txt";
+    const std::string filename = "../../example/tiny_example.txt";
     Generator generator(filename);
 
     while(generator.hasMoreData()){
