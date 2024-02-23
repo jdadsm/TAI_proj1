@@ -31,6 +31,10 @@ public:
             return "";
         }
 
+        if(position == -1){
+            return NULL;
+        }
+
         buffer.clear();
         char c;
         int count = 0;
@@ -40,14 +44,8 @@ public:
             count++;
         }
 
-        file.seekg(position+2);
-        if(file.fail()){
-            position = -1;
-        }else{
-            position += 1;
-        }
-
-        printf("\nbuffer:%s\tposition:%ld",buffer.c_str(),position);
+        position=file.tellg();
+        //printf("\nbuffer:%s\tposition:%ld",buffer.c_str(),position);
 
         return buffer;
     }
@@ -71,18 +69,20 @@ public:
     
     CopyModel(std::string& filename, int chunkSize,std::string method="last"): generator(filename,chunkSize), method(method){
         if(method == "last"){
-            printf("\nlast method");
+            //printf("\nlast method");
         }
     }
 
     void fillHash(){
-        printf("\nfillHash");
-        printf("\nmethod:%s",method.c_str());
+        //printf("\nfillHash");
+        //printf("\nmethod:%s",method.c_str());
         if (method == "last"){
-            printf("here");
-            while(generator.hasMoreData()){
+            while(true){
                 std::string chunk = generator.getNextChunk();
                 int position = generator.getPosition();
+                if(!generator.hasMoreData()){
+                    break;
+                }
                 hashTable[chunk] = position;
             }
         }
@@ -112,8 +112,8 @@ int main(int argc, char* argv[]) {
         printf("Usage: %s <filename> [chunkSize]\n", argv[0]);
         exit(1);
     }
-    printf("\nfilename:%s",filename.c_str());
-    printf("\nchunkSize:%d",chunkSize);
+    //printf("\nfilename:%s",filename.c_str());
+    //printf("\nchunkSize:%d",chunkSize);
     CopyModel copymodel = CopyModel(filename,chunkSize);
     copymodel.fillHash();
     printf("\n");
