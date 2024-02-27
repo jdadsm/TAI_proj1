@@ -27,12 +27,15 @@ public:
     ~Generator() {
         file.close();
     }
-
+    int getChunkSize() {
+        return chunkSize;
+    }
     std::string getNextChunk() {
         if (!file.is_open()) {
             std::cerr << "File is not open!" << std::endl;
             return "";
         }
+    
 
         buffer.clear();
         char c;
@@ -81,6 +84,7 @@ private:
     long hits;
     long misses;
     long tries;
+
     std::string method;
     std::unordered_map<std::string, int> hashTable;
     Generator generator;
@@ -101,7 +105,7 @@ public:
         if (method == "last"){
             while(generator.hasMoreData()){
                 std::string chunk = generator.getNextChunk();
-                int position = generator.getPosition();
+                int position = generator.getPosition()-generator.getChunkSize();
                 
                 printf("\n%s-%c:%d",chunk.c_str(),generator.getChar(position),position);
 
