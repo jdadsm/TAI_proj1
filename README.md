@@ -14,10 +14,10 @@ chmod +x run.sh
 
 - First, compile the program:
 ```bash
-c++ -o cpm cpm.cpp
+c++ main.cpp cpm.cpp generator.cpp -o run
 ```
 
 - Then, run the compiled program while specifying the parameters:
 ```bash
-./cpm <filename> [chunkSize]
+./run <filename> [chunkSize]
 ```
