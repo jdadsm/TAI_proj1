@@ -1,3 +1,0 @@
-- fazer hash e copiar ao mesmo tempo? 
-- não copiar bloco de texto usado para construir hashtable?
-- partilhar hits e misses?
