@@ -14,7 +14,7 @@ chmod +x run.sh
 
 - First, compile the program:
 ```bash
-c++ main.cpp cpm.cpp generator.cpp -o run
+c++ main.cpp cpm.cpp -o run
 ```
 
 - Then, run the compiled program while specifying the parameters:

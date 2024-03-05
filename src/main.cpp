@@ -13,14 +13,10 @@ int main(int argc, char* argv[]) {
         printf("Usage: %s <filename> [chunkSize]\n", argv[0]);
         exit(1);
     }
-    //printf("\nfilename:%s",filename.c_str());
-    //printf("\nchunkSize:%d",chunkSize);
+    
     CopyModel copymodel = CopyModel(filename,chunkSize,"last");
-    copymodel.fillHash();
-
-    printf("\nhits:%ld\nmisses:%ld\ntries:%ld",copymodel.getHits(),copymodel.getMisses(),copymodel.getTries());
-
-    copymodel.writeResults();
+    copymodel.run();
+    
     printf("\n");
     return 0;
 }

@@ -1,7 +1,7 @@
 ## script to run an example
 ## run "chmod +x run.sh" in src folder to give permission
 
-g++ main.cpp cpm.cpp generator.cpp -o run
+g++ main.cpp cpm.cpp -o run
 
 if [ $? -eq 0 ]; then
     echo "Compilation successful."

@@ -2,114 +2,154 @@
 #include <cstdio>
 #include <vector>
 #include <cmath>
-#include "generator.cpp"
+#include <fstream>
+#include <string>
+#include <iostream>
 
 class CopyModel{
 private:
-    long hits;
-    long misses;
-    long tries;
+    std::unordered_map<std::string, long> hits;
+    std::unordered_map<std::string, long> tries;
 
+    int chunkSize;
+    double treshold;
     std::string method;
-    std::unordered_map<std::string, std::string> hashTable;
-    std::ofstream outputFile;
-    std::string probs;
-    Generator generator;
+    std::string data;
+    std::unordered_map<std::string, long> hashTable;
+    std::ifstream inputFile;
     
 
 public:
     
-    CopyModel(std::string& filename, int chunkSize,std::string method="last"): generator(filename,chunkSize,method), method(method){
-        probs = "";
-        hits = 0;
-        misses = 0;
-        tries = 0;
-        
+    CopyModel(std::string& filename, int chunkSize,std::string method="last"): inputFile(filename), chunkSize(chunkSize), method(method){
+        if (!inputFile.is_open()) {
+            std::cerr << "Failed to open file: " << filename << std::endl;
+        }
+        loadData();
+        firstPass();
+        cleanFile("results.txt");
+        treshold = 0.5;
     }
 
-    long getHits(){
-        return hits;
+    void loadData(){
+        std::string line;
+        while (std::getline(inputFile, line)) {
+            data += line;
+        }
+        inputFile.close();
+        //printf("\ndata:%s",data.c_str());
+    }
+    
+    void firstPass() {
+        for (size_t i = 0; i < data.length(); ++i) {
+            char currentChar = data[i];
+            hits[std::string(1, currentChar)] = 0;
+            tries[std::string(1, currentChar)] = 0;
+        }
     }
 
-    long getMisses(){
-        return misses;
-    }
-
-    long getTries(){
-        return tries;
-    }
-
-    void fillHash(){
-        //printf("\nmethod:%s",method.c_str());
-        int chunkSize = generator.getChunkSize();
-        
-        //printf("\nchunkSize:%d",chunkSize);
-
-        if (method == "last"){
-            while(generator.hasMoreData()){
-                std::string chunk = generator.getNextChunk();
-                //int position = generator.getPosition()-generator.getChunkSize();
-                
-                std::string key = chunk.substr(0,chunkSize-1);
-                std::string value = chunk.substr(chunkSize - 1, 1);
-                //printf("\n%s:%s",key.c_str(),value.c_str());
-                std::string prediction = "";
-                if(hashTable.count(key) > 0){
-                    prediction = hashTable[key];
+    void run(){
+        long length = data.length();
+        long pointer = 0;
+        std::string chunk;
+        while(getChunk(pointer,chunk)){
+            if ((hashTable.find(chunk)) == hashTable.end()){
+                hashTable[chunk] = pointer;    
+            }else{
+                if(pointer+chunkSize<length){
+                    copy(hashTable[chunk]+chunkSize,pointer+chunkSize,length);
+                    writeIterationData(pointer);
+                    resetHashTables();
                 }
-                updateStats(prediction,value);
-                hashTable[key] = value;
-                
             }
-        }
-        
-        for (auto it = hashTable.begin(); it != hashTable.end(); ++it) {
-            printf("\n%s:%s",it->first.c_str(),it->second.c_str());
+            
+            pointer+=1;
         }
 
-        //printf("\ntries:%ld\nhits:%ld\nmisses:%ld",tries,hits,misses);
+        for (auto it = hashTable.begin(); it != hashTable.end(); ++it) {
+            //printf("\n%s:%ld",it->first.c_str(),it->second);
+        }
+
     }
 
-    void updateStats(std::string prediction, std::string copied){
-        if(prediction == copied){
-            hits+=1;
-        }else{
-            misses+=1;
+    void cleanFile(const std::string& filename) {
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            std::cerr << "Error opening file: " << filename << std::endl;
+            return;
         }
-        tries+=1;
-        double prob = (prob_hit(hits,misses));
-        probs += std::to_string(prob)+"   "+std::to_string(eai(prob))+"\n";
-        printf("\n%f",(prob_hit(hits,misses)));
+        
+        file.close();
+        }
 
-        if(tries%1000==0){
-            writeResults();
-            probs="";
+    void writeIterationData(long iteration){
+        std::ofstream outputFile("results.txt", std::ios_base::app);
+
+        if (!outputFile.is_open()) {
+            std::cerr << "Error opening file!" << std::endl;
+            exit(1);
         }
+        std::string outputData ="Iteration:" + std::to_string(iteration) +
+                                "\nHits:" + printHashTable(hits) +
+//                                "\nMisses:" + std::to_string(tries[chunk] - hits[chunk]) +
+                                "\nTries:" + printHashTable(tries) +
+                                "\n\n";        
+        outputFile << outputData;
+        outputFile.close();
+    }
+    
+    std::string printHashTable(std::unordered_map<std::string, long> hashTable) const {
+        std::string result;
+        for (const auto& pair : hashTable) {
+            result += "\n" + pair.first + ": " + std::to_string(pair.second);
+        }
+        return result;
+    }
+
+    void resetHashTables(){
+        for (const auto& pair : hits) {
+            hits[pair.first] = 0;
+        }
+        for (const auto& pair : tries) {
+            tries[pair.first] = 0;
+        }
+    }
+
+    void copy(long copyPointer, long predictionPointer, long length){
+        double currTreshold = 0;
+        int localMisses=0;
+        int localTries=0;
+        int i=0;
+        while( (currTreshold<treshold || localTries <=5) && (predictionPointer+i < length) && (copyPointer+i < predictionPointer)){
+            std::string copyChar = std::string(1,data[copyPointer+i]);
+            std::string predictionChar = std::string(1,data[predictionPointer+i]);
+            tries[predictionChar] += 1;
+            localTries+=1;
+            if(copyChar == predictionChar){
+                hits[predictionChar] += 1;
+            }else{
+                localMisses+=1;
+            }
+        
+            currTreshold = static_cast<double>(localMisses/localTries);
+            i+=1;
+            
+        }
+    }
+
+
+    bool getChunk(long pointer, std::string& chunk){
+        chunk = data.substr(pointer,chunkSize);
+        return chunk.length() == chunkSize;
     }
     
     double prob_hit(long hits, long misses, int alpha = 1){
-        printf("\nhits:%ld",hits);
-        printf("\nmisses:%ld",misses);
         return static_cast<double>(hits+alpha)/(hits+misses+2*alpha);
     }
 
     //returns estimated amount of information for a symbol
     double eai(double probability){
         return -log2(probability);
-    }
-
-    void writeResults(){
-        std::ofstream outputFile("results.txt", std::ios_base::app);
-        //outputFile.open("results.txt");
-
-        if (!outputFile.is_open()) {
-            std::cerr << "Error opening file!" << std::endl;
-            exit(1);
-        }
-
-        outputFile << probs;
-
-        outputFile.close();
     }
 
 };
