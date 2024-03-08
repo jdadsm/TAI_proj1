@@ -19,5 +19,5 @@ c++ main.cpp cpm.cpp -o run
 
 - Then, run the compiled program while specifying the parameters:
 ```bash
-./run <filename> [chunkSize]
+./run <filename> [chunkSize] [treshold]
 ```
