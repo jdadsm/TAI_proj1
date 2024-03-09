@@ -56,18 +56,14 @@ public:
     void run(){
         long length = data.length();
         long pointer = 0;
+        long last=0;
         std::string chunk;
-        while(getChunk(pointer,chunk)){
-            if ((hashTable.find(chunk)) == hashTable.end()){
-                hashTable[chunk] = pointer;    
-            }else{
-                if(pointer+chunkSize<length){
-                    copy(hashTable[chunk],pointer,length);
-                    //writeIterationData(pointer);
-                    //resetHashTables();
-                }
-            }
-            resetHashTables();
+        while(getChunk(pointer,chunk)){  
+                pointer = copy(pointer,length,chunk,last);
+                //writeIterationData(pointer);
+                //resetHashTables();
+                resetHashTables();
+            
             pointer+=1;
         }
         printf("\n%f",bits_total);
@@ -86,14 +82,14 @@ public:
         //std::ofstream outputFile("results.txt", std::ios_base::app);
         double pHit;
         double bits;
-        /*
+       /*
         if (!outputFile.is_open()) {
             std::cerr << "Error opening file!" << std::endl;
             exit(1);
         }
         
         std::string outputData =std::to_string(iteration)+"\t\t\tHits\t\tMisses\t\tTries\t\tProb(H)\t\tEAI"+"\t\t Predict:"+symbol_in+"\t\tSymbol : "+copy_char+"\n";
-        */
+        */ 
         double pHit_s = prob_hit(totalTries-totalMisses,totalMisses);
         double bits_it ;
         if(copy_char==symbol_in){
@@ -114,37 +110,70 @@ public:
             outputData += symbol + "\t\t\t" + std::to_string(hits[symbol]) + "\t\t\t" + std::to_string(tries[symbol]-hits[symbol]) + "\t\t\t"+std::to_string(tries[symbol]) +
                          "\t\t\t" + std::to_string(pHit) + "\t" + std::to_string(bits) +"\n";
         }
+        */
         double totalProb = prob_hit(totalTries-totalMisses, totalMisses);
+        /*
         outputData += "Total\t\t" + std::to_string(totalTries-totalMisses) + "\t\t\t" + std::to_string(totalMisses)+ "\t\t\t" + std::to_string(totalTries)+ "\t\t\t" + std::to_string(totalProb) + "\t" + std::to_string(eai(totalProb)) + "\n";
         outputData += "current treshold:" + std::to_string(currTreshold) + "\n";
         outputData += "Accumulated bits:" + std::to_string(bits_it) + "\n\n";
         outputFile << outputData;
         outputFile.close();
         */
+        
     }
 
-    void copy(long copyPointer, long predictionPointer, long length){
+    long copy(long pointer_in, long length,std::string& chunk_in,long& last){
+        long pointer = pointer_in;
+        std::string chunk = chunk_in;
         double currTreshold = 0;
         long localMisses = 0;
         long localTries = 0;
-        int i=0;
         double bits_it ;
-        while( (currTreshold<treshold || localTries <=5) && (predictionPointer+i < length)){
-            std::string copyChar = std::string(1,data[copyPointer+i]);
-            std::string predictionChar = std::string(1,data[predictionPointer+i]);
+        long copyPointer = -1;
+        std::string copyChar = "";
+        while( (currTreshold<treshold || localTries <=5) && (pointer+1 < length)){
+            std::string predictionChar = std::string(1,data[pointer]);
             tries[predictionChar] += 1;
             localTries+=1;
+            // before a the first sequence repetition
+            if(copyPointer == -1){
+                if (hashTable.find(chunk) == hashTable.end()) {
+                hashTable[chunk] = pointer;
+                localMisses+=1;
+                //printf("a-%ld",pointer);
+                writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar);
+                pointer+=1;
+                getChunk(pointer,chunk);
+                continue;
+                }else{
+                copyPointer = hashTable[chunk];
+                hashTable[chunk] = pointer;
+                }   
+            }
+            //after
+            //printf("b-%ld",pointer);
+            std::string copyChar = std::string(1,data[copyPointer]);
             if(copyChar == predictionChar){
                 hits[predictionChar] += 1;
             }else{
                 localMisses+=1;
             }
             currTreshold = static_cast<double>(localMisses)/(localTries); 
-            writeIterationData(localTries,currTreshold,localMisses,localTries,predictionChar,copyChar);
-            i+=1;
+            pointer +=1;
+            copyPointer+=1;
+            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar);
+            getChunk(pointer,chunk);
+            //progress
+            long percentage = (pointer*100) / length;
+            if(std::fmod(percentage, 5.0)== 0.0 &&  last!=percentage){
+                std::cout << "\n"+std::to_string(percentage)<< std::endl;
+            }
+            last = percentage;
+            
         }
+        return pointer;
     }
-    
+
     double bits_fail(std::string failed_symbol){
         double total = 0;
         for (std::string symbol : uniqueSymbols){
