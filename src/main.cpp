@@ -1,9 +1,37 @@
 #include "cpm.cpp"
+#include <vector>
+
+using namespace std;
+
+std::vector<double> linspace(double start, double end, int numPoints) {
+    std::vector<double> result;
+    if (numPoints <= 1) {
+        result.push_back(start);
+        return result;
+    }
+
+    double step = (end - start) / (numPoints - 1);
+    for (int i = 0; i < numPoints; ++i) {
+        result.push_back(start + i * step);
+    }
+    return result;
+}
+
+std::vector<long> linspace_int(long start, long numPoints) {
+    std::vector<long> result;
+    long i = start;
+    long k=0;
+    while(i<numPoints){
+        result.push_back(i);
+        i++;
+    }
+    return result;
+}
 
 int main(int argc, char* argv[]) {
     std::string filename = "";
     int chunkSize = 0;
-    double threshold = 0.5;
+    double threshold = 0.2;
     if(argc == 2){
         filename = argv[1];
         chunkSize = 4;
@@ -19,9 +47,27 @@ int main(int argc, char* argv[]) {
         exit(1);
     }
     
-    CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
-    copymodel.run();
+    ofstream outFile("grid_search_iterations.txt");
+    if (!outFile.is_open()) {
+        cout << "Error opening file for writing." << endl;
+        exit(1);
+    }
+    
+    vector<long> chunkSizes = linspace_int(2,15);
+    vector<double> thresholds = linspace(0.05,1,20);
+
+    for (long Ichunksize : chunkSizes) {
+        for (double Ithreshold : thresholds) {
+            CopyModel copymodel = CopyModel(filename,Ichunksize,Ithreshold,"last");
+            double size = copymodel.run();
+            cout << "Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
+            outFile << "Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
+        }
+    }
+    
+    outFile.close();
     
     printf("\n");
     return 0;
 }
+ 
