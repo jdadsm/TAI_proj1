@@ -52,8 +52,11 @@ int main(int argc, char* argv[]) {
         cout << "Error opening file for writing." << endl;
         exit(1);
     }
-    
-    vector<long> chunkSizes = linspace_int(2,15);
+    CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
+    double size = copymodel.run();
+    printf("%f",size);
+    /*
+       vector<long> chunkSizes = linspace_int(2,15);
     vector<double> thresholds = linspace(0.05,1,20);
 
     for (long Ichunksize : chunkSizes) {
@@ -65,6 +68,8 @@ int main(int argc, char* argv[]) {
         }
     }
     
+    */
+ 
     outFile.close();
     
     printf("\n");

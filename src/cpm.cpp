@@ -5,7 +5,7 @@
 #include <fstream>
 #include <string>
 #include <iostream>
-
+#include <queue>
 class CopyModel{
 private:
     std::unordered_map<std::string, long> hits;
@@ -53,13 +53,13 @@ public:
         }   
     }
 
-    double run(){
+    double run(bool logs=true){
         long length = data.length();
         long pointer = 0;
         long last=0;
         std::string chunk;
         while(getChunk(pointer,chunk)){  
-                pointer = copy(pointer,length,chunk,last);
+                pointer = copy(pointer,length,chunk,last,logs);
                 //writeIterationData(pointer);
                 //resetHashTables();
                 resetHashTables();
@@ -76,12 +76,15 @@ public:
         file.close();
     }
 
-    void writeIterationData(long iteration, double currTreshold, long totalMisses, long totalTries, std::string symbol_in, std::string copy_char,bool miss, bool logs){
+    void writeIterationData(long iteration, double currTreshold, long totalMisses, 
+    long totalTries, std::string symbol_in, std::string copy_char,bool miss, bool logs){
+        
         double pHit;
         double bits;
         std::ofstream outputFile;
         std::string outputData;
         if (logs){
+            
             std::ofstream outputFile("results.txt", std::ios_base::app);
             if (!outputFile.is_open()) {
                 std::cerr << "Error opening file!" << std::endl;
@@ -133,12 +136,15 @@ public:
               
     }
 
-    long copy(long pointer_in, long length,std::string& chunk_in,long& last){
+    long copy(long pointer_in, long length,std::string& chunk_in,long& last,bool logs,std::string th_method="lat ten"){
         long pointer = pointer_in;
         long copyPointer = -1;
         long localMisses = 0;
         long localTries = 0;
         double bits_it;
+        std::queue<long> last_ten;
+
+
         double currTreshold = 0;
         std::string chunk = chunk_in;
         std::string copyChar = "";
@@ -148,47 +154,81 @@ public:
             
             // before a the first sequence repetition
             if(copyPointer == -1){
-                if(beforeRepetition(copyPointer,chunk,pointer,localMisses, currTreshold, localTries, predictionChar, copyChar)) continue;
+                if(beforeRepetition(copyPointer,chunk,pointer,localMisses, currTreshold, localTries,
+                 predictionChar, copyChar,th_method,last_ten,logs)) continue;
             }
             //after
             //printf("b-%ld",pointer);
             
-            afterRepetition(copyPointer,chunk,pointer,localMisses, currTreshold, localTries, predictionChar, copyChar);
+            afterRepetition(copyPointer,chunk,pointer,localMisses, currTreshold, localTries,
+            predictionChar, copyChar,th_method,last_ten,logs);
             progress(pointer,length,last);
         }
         return pointer;
     }
 
-    bool beforeRepetition (long& copyPointer,std::string& chunk,long& pointer,long& localMisses,double& currTreshold, long& localTries, std::string& predictionChar,std::string& copyChar){
+    bool beforeRepetition (long& copyPointer,std::string& chunk,long& pointer,long& localMisses,
+    double& currTreshold, long& localTries, std::string& predictionChar,std::string& copyChar,
+    std::string th_method,std::queue<long>& last_ten,bool logs){
+
         if (hashTable.find(chunk) == hashTable.end()) {
             hashTable[chunk] = pointer;
-            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar,true,false);
+            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar,true,logs);
             localMisses+=1;
             localTries+=1;
             //printf("a-%ld",pointer);
-            
             pointer+=1;
             getChunk(pointer,chunk);
-            currTreshold = static_cast<double>(localMisses)/(localTries); 
+            if (th_method == "last ten"){
+                if(last_ten.size()==10)last_ten.pop();
+                last_ten.push(0);
+                currTreshold = static_cast<double>(last_ten.size())/(sumElements(last_ten)); 
+            }else{
+                currTreshold = static_cast<double>(localMisses)/(localTries); 
+            }
+            
             return true;
         }
         copyPointer = hashTable[chunk];
         hashTable[chunk] = pointer;
         return false;      
     }
+    long sumElements(std::queue<long>q){
+        int sum = 0;
+        while(!q.empty())
+        {
+            sum+=q.front();
+            q.pop();
+        }
+        return sum;
+    }
 
-    void afterRepetition(long& copyPointer,std::string& chunk,long& pointer,long& localMisses,double& currTreshold, long& localTries, std::string& predictionChar,std::string& copyChar){
+    void afterRepetition(long& copyPointer,std::string& chunk,long& pointer,long& localMisses,double& currTreshold, long& localTries,
+     std::string& predictionChar,std::string& copyChar,std::string th_method,std::queue<long>& last_ten,bool logs){
         copyChar = std::string(1,data[copyPointer]);
         
         if(copyChar == predictionChar){
             hits[predictionChar] += 1;
-            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar,false,false);
+            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar,false,logs);
+            if (th_method == "last ten"){
+                if(last_ten.size()==10)last_ten.pop();
+                last_ten.push(1);
+                currTreshold = static_cast<double>(last_ten.size())/(sumElements(last_ten)); 
+            }else{
+                currTreshold = static_cast<double>(localMisses)/(localTries); 
+            }
         }else{
-            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar,true,false);
+            writeIterationData(pointer,currTreshold,localMisses,localTries,predictionChar,copyChar,true,logs);
             localMisses+=1;
+            if (th_method == "last ten"){
+                if(last_ten.size()==10)last_ten.pop();
+                last_ten.push(0);
+                currTreshold = static_cast<double>(last_ten.size())/(sumElements(last_ten)); 
+            }else{
+                currTreshold = static_cast<double>(localMisses)/(localTries); 
+            }
         }
         localTries+=1;
-        currTreshold = static_cast<double>(localMisses)/(localTries); 
         pointer +=1;
         copyPointer+=1;   
         getChunk(pointer,chunk);
