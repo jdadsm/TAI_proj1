@@ -29,7 +29,7 @@ c++ main.cpp cpm.cpp -o run
 
 - Then, run the compiled program while specifying the parameters:
 ```bash
-./run <filename> [chunkSize] [threshold]
+./run <filename> [chunkSize] [threshold] [logs]
 ```
 
 - To do the same for mutate, first compile the program:

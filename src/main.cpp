@@ -32,6 +32,7 @@ int main(int argc, char* argv[]) {
     std::string filename = "";
     int chunkSize = 0;
     double threshold = 0.2;
+    bool logs = true;
     if(argc == 2){
         filename = argv[1];
         chunkSize = 4;
@@ -42,8 +43,19 @@ int main(int argc, char* argv[]) {
         filename = argv[1];
         chunkSize = std::stoi(argv[2]);
         threshold = std::stof(argv[3]);
+    }else if (argc == 5){
+        filename = argv[1];
+        chunkSize = std::stoi(argv[2]);
+        threshold = std::stof(argv[3]);
+        if(std::stoi(argv[4]) == 1){
+            logs = true;
+        }else if(std::stoi(argv[4]) == 0){
+            logs = false;
+        }else{
+            exit(2);
+        }
     } else {
-        printf("Usage: %s <filename> [chunkSize] [threshold]\n", argv[0]);
+        printf("Usage: %s <filename> [chunkSize] [threshold] [logs]\n", argv[0]);
         exit(1);
     }
     
@@ -52,23 +64,25 @@ int main(int argc, char* argv[]) {
         cout << "Error opening file for writing." << endl;
         exit(1);
     }
-    CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
-    double size = copymodel.run();
-    printf("%f",size);
-    /*
-       vector<long> chunkSizes = linspace_int(2,15);
+    //CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
+
+    //double size = copymodel.run(logs);
+    //printf("%f",size);
+    
+    vector<long> chunkSizes = linspace_int(2,15);
+    vector<std::string> methods = {"last ten"};
     vector<double> thresholds = linspace(0.05,1,20);
 
-    for (long Ichunksize : chunkSizes) {
-        for (double Ithreshold : thresholds) {
-            CopyModel copymodel = CopyModel(filename,Ichunksize,Ithreshold,"last");
-            double size = copymodel.run();
-            cout << "Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
-            outFile << "Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
+    for (std::string Imethod: methods){
+        for (long Ichunksize : chunkSizes) {
+            for (double Ithreshold : thresholds) {
+                CopyModel copymodel = CopyModel(filename,Ichunksize,Ithreshold,Imethod);
+                double size = copymodel.run(logs);
+                cout << "Method: " << Imethod << ", Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
+                outFile << "Method: " << Imethod << ", Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
+            }
         }
     }
-    
-    */
  
     outFile.close();
     

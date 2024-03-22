@@ -53,13 +53,13 @@ public:
         }   
     }
 
-    double run(bool logs=true){
+    double run(bool logs){
         long length = data.length();
         long pointer = 0;
         long last=0;
         std::string chunk;
         while(getChunk(pointer,chunk)){  
-                pointer = copy(pointer,length,chunk,last,logs);
+                pointer = copy(pointer,length,chunk,last,logs,method);
                 //writeIterationData(pointer);
                 //resetHashTables();
                 resetHashTables();
@@ -77,66 +77,85 @@ public:
     }
 
     void writeIterationData(long iteration, double currTreshold, long totalMisses, 
-    long totalTries, std::string symbol_in, std::string copy_char,bool miss, bool logs){
-        
+                            long totalTries, std::string symbol_in, std::string copy_char,bool miss, bool logs){
         double pHit;
         double bits;
-        std::ofstream outputFile;
         std::string outputData;
-        if (logs){
-            
-            std::ofstream outputFile("results.txt", std::ios_base::app);
-            if (!outputFile.is_open()) {
-                std::cerr << "Error opening file!" << std::endl;
-                exit(1);
-            }
-
-            outputData =std::to_string(iteration)+"\t\t\tHits\t\tMisses\t\tTries\t\tProb(H)\t\tEAI"+"\t\t Predict:"+symbol_in+"\t\tSymbol : "+copy_char+"\n";
         
+        if(logs){    
+            outputData = std::to_string(iteration)+"\t\t\tHits\t\tMisses\t\tTries\t\tProb(H)\t\tEAI"+"\t\t Predict:"+symbol_in+"\t\tSymbol : "+copy_char+"\n";
         }
         
-        
-         
         double pHit_s = prob_hit(totalTries-totalMisses,totalMisses);
-        double bits_it ;
-        if(copy_char==symbol_in){
-            bits_it =  eai(pHit_s);
+        double bits_it;
+        double prob_total=0;
+        if(false){
+            if(copy_char==symbol_in){
+                bits_it =  eai(pHit_s);
+            }else{
+                bits_it = eai((1-pHit_s)/(uniqueSymbols.size()-1));
+            }
         }else{
-            bits_it = eai((1-pHit_s)/(uniqueSymbols.size()-1));
+            for (std::string symbol : uniqueSymbols){
+                if (symbol==symbol_in)continue;
+                prob_total+=prob_hit(hits[symbol],tries[symbol]-hits[symbol],1);
+            }
+            if(copy_char==symbol_in){
+                bits_it =  eai(pHit_s);
+            }else{
+                double prob = (1-pHit_s)*(prob_hit(hits[copy_char],tries[copy_char]-hits[copy_char],1)/prob_total);
+                bits_it = eai(prob);
+             
+            }
         }
+       
         bits_total += bits_it;
         
-        if (logs){
+        if(logs){
+            //for now
             for (std::string symbol : uniqueSymbols){
                 if(symbol_in==symbol){
                     pHit = pHit_s;
                     bits = eai(pHit);
                 }else{
-                    pHit = (1-pHit_s)/(uniqueSymbols.size()-1);
+                    pHit = (1-pHit_s)*(prob_hit(hits[symbol],tries[symbol]-hits[symbol])/prob_total,1);
                     bits = eai(pHit);
                 }
                 outputData += symbol + "\t\t\t" + std::to_string(hits[symbol]) + "\t\t\t" + std::to_string(tries[symbol]-hits[symbol]) + "\t\t\t"+std::to_string(tries[symbol]) +
                             "\t\t\t" + std::to_string(pHit) + "\t" + std::to_string(bits) +"\n";
-        }
-            
+            }
         }
     
-        
-
         double totalProb = prob_hit(totalTries-totalMisses, totalMisses);
         totalTries++;
-        if(miss)totalMisses++;
-        if (logs){
-             outputData += "Total\t\t" + std::to_string(totalTries-totalMisses) + "\t\t\t" + std::to_string(totalMisses)+ "\t\t\t" + std::to_string(totalTries)+ "\t\t\t" + std::to_string(totalProb) + "\t" + std::to_string(eai(totalProb)) + "\n";
-            outputData += "current treshold:" + std::to_string(currTreshold) + "\n";
-            outputData += "Accumulated bits:" + std::to_string(bits_it) + "\n\n";
-            outputFile << outputData;
-            outputFile.close();
-        }
-              
-    }
 
-    long copy(long pointer_in, long length,std::string& chunk_in,long& last,bool logs,std::string th_method="lat ten"){
+        if(miss)totalMisses++;
+
+        if(logs){
+            outputData += "Total\t\t" + std::to_string(totalTries-totalMisses) + "\t\t\t" + std::to_string(totalMisses)+ "\t\t\t"
+            + std::to_string(totalTries)+ "\t\t\t" + std::to_string(totalProb) + "\t" + std::to_string(eai(totalProb)) + "\n"
+            + "current treshold:" + std::to_string(currTreshold) + "\n"
+            + "Accumulated bits:" + std::to_string(bits_it) + "\n\n";
+
+            std::ofstream outputFile("results.txt", std::ios_base::app);
+        
+            if (!outputFile.is_open()) {
+                std::cerr << "Error opening file!" << std::endl;
+                exit(1);
+            }
+            
+            outputFile << outputData;
+            outputFile.close();     
+        }
+    }
+    void printQueue(std::queue<long> q) {
+        while (!q.empty()) {
+            std::cout << q.front() << " "; // Output the front element of the queue
+            q.pop(); // Remove the front element from the queue
+        }
+        std::cout << std::endl;
+    }
+    long copy(long pointer_in, long length,std::string& chunk_in,long& last,bool logs,std::string th_method){
         long pointer = pointer_in;
         long copyPointer = -1;
         long localMisses = 0;
@@ -151,7 +170,6 @@ public:
         while( (currTreshold<treshold || localTries <=10) && (pointer+1 < length)){
             std::string predictionChar = std::string(1,data[pointer]);
             tries[predictionChar] += 1;
-            
             // before a the first sequence repetition
             if(copyPointer == -1){
                 if(beforeRepetition(copyPointer,chunk,pointer,localMisses, currTreshold, localTries,
@@ -182,7 +200,7 @@ public:
             if (th_method == "last ten"){
                 if(last_ten.size()==10)last_ten.pop();
                 last_ten.push(0);
-                currTreshold = static_cast<double>(last_ten.size())/(sumElements(last_ten)); 
+                currTreshold = static_cast<double>(sumElements(last_ten))/(last_ten.size()); 
             }else{
                 currTreshold = static_cast<double>(localMisses)/(localTries); 
             }
@@ -213,7 +231,7 @@ public:
             if (th_method == "last ten"){
                 if(last_ten.size()==10)last_ten.pop();
                 last_ten.push(1);
-                currTreshold = static_cast<double>(last_ten.size())/(sumElements(last_ten)); 
+                currTreshold = static_cast<double>(sumElements(last_ten))/(last_ten.size()); 
             }else{
                 currTreshold = static_cast<double>(localMisses)/(localTries); 
             }
@@ -223,7 +241,7 @@ public:
             if (th_method == "last ten"){
                 if(last_ten.size()==10)last_ten.pop();
                 last_ten.push(0);
-                currTreshold = static_cast<double>(last_ten.size())/(sumElements(last_ten)); 
+                currTreshold = static_cast<double>(sumElements(last_ten))/(last_ten.size());  
             }else{
                 currTreshold = static_cast<double>(localMisses)/(localTries); 
             }
@@ -251,6 +269,7 @@ public:
         }
         return total;
     }
+    
     bool getChunk(long pointer, std::string& chunk){
         chunk = data.substr(pointer,chunkSize);
         return chunk.length() == chunkSize;
