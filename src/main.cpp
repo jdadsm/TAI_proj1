@@ -1,6 +1,7 @@
 #include "cpm.cpp"
 #include <vector>
 
+#include <chrono>
 using namespace std;
 
 std::vector<double> linspace(double start, double end, int numPoints) {
@@ -64,29 +65,33 @@ int main(int argc, char* argv[]) {
         cout << "Error opening file for writing." << endl;
         exit(1);
     }
-    CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
+    //CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
 
-    double size = copymodel.run(logs);
-    printf("%f",size);
+    //double size = copymodel.run(logs);
+    //printf("%f",size);
     
-    /*
-    vector<long> chunkSizes = linspace_int(15,25);
-    vector<std::string> methods = {"default"};
+    
+    vector<long> chunkSizes = linspace_int(2,15);
+    vector<std::string> methods = {"default","last_ten"};
     vector<double> thresholds = linspace(0.05,1,20);
 
     for (std::string Imethod: methods){
         for (long Ichunksize : chunkSizes) {
             for (double Ithreshold : thresholds) {
+                auto start = std::chrono::high_resolution_clock::now();
                 CopyModel copymodel = CopyModel(filename,Ichunksize,Ithreshold,Imethod);
+                std::cout << logs << endl;
                 double size = copymodel.run(logs);
-                cout << "Method: " << Imethod << ", Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
-                outFile << "Method: " << Imethod << ", Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << endl;
+                auto end = std::chrono::high_resolution_clock::now();
+                auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                cout << "Method: " << Imethod << ", Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << ", Time: " << duration.count() << endl;
+                outFile << "Method: " << Imethod << ", Chunksize: " << Ichunksize << ", Threshold: " << Ithreshold << ", Size: " << size << ", Time: " << duration.count() << endl;
             }
         }
     }
  
     outFile.close();
-    */
+    
     printf("\n");
     return 0;
 }
