@@ -30,12 +30,12 @@ std::vector<long> linspace_int(long start, long numPoints) {
 
 int main(int argc, char* argv[]) {
     std::string filename = "";
-    int chunkSize = 0;
-    double threshold = 0.2;
-    bool logs = true;
+    int chunkSize = 11;
+    double threshold = 0.1;
+    bool logs = false;
     if(argc == 2){
         filename = argv[1];
-        chunkSize = 4;
+        chunkSize = 11;
     } else if(argc == 3){
         filename = argv[1];
         chunkSize = std::stoi(argv[2]);
@@ -64,13 +64,14 @@ int main(int argc, char* argv[]) {
         cout << "Error opening file for writing." << endl;
         exit(1);
     }
-    //CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
+    CopyModel copymodel = CopyModel(filename,chunkSize,threshold,"last");
 
-    //double size = copymodel.run(logs);
-    //printf("%f",size);
+    double size = copymodel.run(logs);
+    printf("%f",size);
     
-    vector<long> chunkSizes = linspace_int(2,15);
-    vector<std::string> methods = {"last ten"};
+    /*
+    vector<long> chunkSizes = linspace_int(15,25);
+    vector<std::string> methods = {"default"};
     vector<double> thresholds = linspace(0.05,1,20);
 
     for (std::string Imethod: methods){
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]) {
     }
  
     outFile.close();
-    
+    */
     printf("\n");
     return 0;
 }

@@ -111,6 +111,16 @@ public:
        
         bits_total += bits_it;
         
+        std::ofstream outputFile2("bits_it.txt", std::ios_base::app);
+        
+        if (!outputFile2.is_open()) {
+            std::cerr << "Error opening file!" << std::endl;
+            exit(1);
+        }
+
+        outputFile2 << bits_it << "\n";
+        outputFile2.close();
+        
         if(logs){
             //for now
             for (std::string symbol : uniqueSymbols){
