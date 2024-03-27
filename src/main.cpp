@@ -32,7 +32,7 @@ std::vector<long> linspace_int(long start, long numPoints) {
 
 int main(int argc, char* argv[]) {
     std::string filename = "../example/tiny_example.txt";
-    std::string method = "default";
+    std::string method = "last ten";
     int chunkSize = 11;
     double threshold = 0.1;
     bool logs = false;
@@ -69,8 +69,8 @@ int main(int argc, char* argv[]) {
 
     }else{
 
-        vector<long> chunkSizes = linspace_int(2,15);
-        vector<std::string> methods = {"default","last_ten"};
+        vector<long> chunkSizes = linspace_int(9,12);
+        vector<std::string> methods = {"last ten"};
         vector<double> thresholds = linspace(0.05,1,20);
 
         for (std::string Imethod: methods){
