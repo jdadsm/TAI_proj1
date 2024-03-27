@@ -76,7 +76,6 @@ public:
             for (std::string symbol : uniqueSymbols){
                 if (symbol==symbol_in)continue;
                 prob_total+=prob_hit(hits[symbol],tries[symbol]-hits[symbol]);
-                std::cout << "c:" << prob_total << std::endl;  
             }
             
             if(copy_char==symbol_in){

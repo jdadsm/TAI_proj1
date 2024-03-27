@@ -40,10 +40,9 @@ public:
     
     void run(){
         std::ofstream file("../example/mutated.txt");
-        std::vector<char> previous_symbols; // Buffer to store previous symbols
+        std::vector<char> previous_symbols;
         srand((unsigned) time(NULL));
         for (char symbol : data){
-            // Exclude previous symbols from uniqueSymbols set
             std::set<char> eligible_symbols = uniqueSymbols;
             for (char prev_symbol : previous_symbols) {
                 eligible_symbols.erase(prev_symbol);
@@ -52,13 +51,11 @@ public:
             int mutator = 1 + rand() % 100;
             int mutate_ch = int(mutate_chance * 100);
             if (mutator > mutate_ch){
-                file << symbol; // Keep the original symbol
+                file << symbol;
             } else {
                 if (eligible_symbols.empty()) {
-                    // If there are no eligible symbols, keep the original symbol
                     file << symbol;
                 } else {
-                    // Select a random symbol from the eligible set for mutation
                     int mutate_key = rand() % eligible_symbols.size();
                     auto l_front = eligible_symbols.begin();
                     std::advance(l_front, mutate_key);
@@ -66,9 +63,7 @@ public:
                 }
             }
 
-            // Update previous_symbols buffer
             if (previous_symbols.size() == 2) {
-                // Keep the buffer size limited to 2 to store only the previous two symbols
                 previous_symbols.erase(previous_symbols.begin());
             }
             previous_symbols.push_back(symbol);
