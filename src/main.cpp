@@ -31,7 +31,7 @@ std::vector<long> linspace_int(long start, long numPoints) {
 }
 
 int main(int argc, char* argv[]) {
-    std::string filename = "";
+    std::string filename = "../example/tiny_example.txt";
     std::string method = "default";
     int chunkSize = 11;
     double threshold = 0.1;

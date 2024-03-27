@@ -1,19 +1,19 @@
 #include "mutate.cpp"
 
+using namespace std;
 int main(int argc, char* argv[]) {
-    std::string filename = "";
-    double mutate_chance;
-    if(argc == 2){
-        filename = argv[1];
-        mutate_chance = 0.5;
-    } else if(argc == 3){
-        filename = argv[1];
-        mutate_chance = std::stof(argv[2]);
-    } else {
-        printf("Usage: %s <filename> [mutate chance]\n", argv[0]);
-        exit(1);
+    std::string filename = "../example/tiny_example.txt";
+    double mutate_chance = 0.5;
+
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "-f" && i + 1 < argc) {
+            filename = argv[++i];
+        } else if (arg == "-m" && i + 1 < argc) {
+            mutate_chance = std::stof(argv[++i]);
+        }
     }
-    //replace with mutate later
+
     Mutate mut = Mutate(filename,mutate_chance);
     mut.run();
     
